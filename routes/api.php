@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CarController;
 
 Route::group(
     [
@@ -21,6 +22,16 @@ Route::group(
     ],
     function(){
         Route::get('/profile', [UserController::class, 'me']);
+    }
+);
+
+Route::group(
+    [
+        'prefix' => 'car'
+    ],
+    function(){
+        Route::get('/', [CarController::class, 'index']);
+        Route::get('/{id}', [CarController::class, 'detail']);
     }
 );
 
