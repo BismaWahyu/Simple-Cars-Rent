@@ -116,30 +116,65 @@ class RentController extends Controller
             ]);
         }
 
-        $duration = Carbon::parse($request->input('start_date'))->diffInDays(Carbon::parse($request->input('end_date')));
-        $price = ($duration * $car->tariff) * $request->input('amount');
+        try {
+            $this->checkRentalAvailability($car->id, $request->input('start_date'), $request->input('end_date'));
 
-        $carRent = CarsRent::create([
-            'user_id' => $request->input('user_id'),
-            'car_id' => $request->input('car_id'),
-            'start_date' => $request->input('start_date'),
-            'end_date' => $request->input('end_date'),
-            'amount' => $request->input('amount'),
-            'price' => $price,
-        ]);
+            $duration = Carbon::parse($request->input('start_date'))->diffInDays(Carbon::parse($request->input('end_date')));
+            $price = ($duration * $car->tariff) * $request->input('amount');
 
-        $car->available = $car->available - $request->input('amount');
-        $car->save();
+            $carRent = CarsRent::create([
+                'user_id' => $request->input('user_id'),
+                'car_id' => $request->input('car_id'),
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+                'amount' => $request->input('amount'),
+                'price' => $price,
+            ]);
 
-        return response()->json([
-            'meta' => [
-                'code' => 201,
-                'status' => 'Success',
-                'message' => 'You made new booking!'
-            ],
-            'data' => [
-                'cars' => $carRent
-            ]
-        ]);
+            $car->available = $car->available - $request->input('amount');
+            $car->save();
+
+            return response()->json([
+                'meta' => [
+                    'code' => 201,
+                    'status' => 'Success',
+                    'message' => 'You made new booking!'
+                ],
+                'data' => [
+                    'cars' => $carRent
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'meta' => [
+                    'code' => 422,
+                    'status' => 'Success',
+                    'message' => $e->getMessage()
+                ],
+                'data' => [
+                    'cars' => []
+                ]
+            ], 422);
+        }
+    }
+
+    public function checkRentalAvailability($carId, $startDate, $endDate){
+        $existingRentals = CarsRent::where('car_id', $carId)
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->where('start_date', '<', $endDate)
+                        ->where('end_date', '>', $startDate);
+                })->orWhere(function ($q) use ($startDate, $endDate) {
+                    $q->where('start_date', '>=', $startDate)
+                        ->where('end_date', '<=', $endDate);
+                });
+            })
+            ->exists();
+            
+            $car = Cars::find($carId); // Check car availability
+
+            if ($existingRentals || $car->available <= 0) {
+                throw new \Exception('Car is either already rented during the selected dates or currently out of stock.');
+            }
     }
 }
