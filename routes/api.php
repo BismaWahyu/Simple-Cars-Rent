@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CarController;
+use App\Http\Controllers\Api\RentController;
 
 Route::group(
     [
@@ -32,6 +33,15 @@ Route::group(
     function(){
         Route::get('/', [CarController::class, 'index']);
         Route::get('/{id}', [CarController::class, 'detail']);
+    }
+);
+
+Route::group(
+    [
+        'prefix' => 'rent'
+    ],
+    function(){
+        Route::get('/', [RentController::class, 'index']);
     }
 );
 
