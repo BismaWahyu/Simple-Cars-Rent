@@ -43,6 +43,7 @@ Route::group(
     ],
     function(){
         Route::get('/', [RentController::class, 'index']);
+        Route::get('/{id}', [RentController::class, 'detail']);
         Route::post('/book', [RentController::class, 'store']);
     }
 );
