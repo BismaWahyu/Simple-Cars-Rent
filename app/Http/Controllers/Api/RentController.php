@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\CarsRent;
 
@@ -26,5 +27,9 @@ class RentController extends Controller
                 'cars' => $rents
             ]
             ]);
+    }
+
+    public function detail(Request $request, $id){
+        $validator = Validator::make(['id' => $id]);
     }
 }

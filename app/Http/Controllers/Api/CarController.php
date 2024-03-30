@@ -65,4 +65,50 @@ class CarController extends Controller
             ]
         ]);
     }
+
+    public function search(Request $request){
+        $validator = Validator::make($request->all(),[
+            'brand' => 'nullable|string',
+            'model' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        };
+
+        $query = Cars::query();
+
+        if ($request->has('brand')) {
+            $query->where('brand', 'like', '%' . $request->input('brand') . '%');
+        }
+
+        if ($request->has('model')) {
+            $query->where('model', 'like', '%' . $request->input('model') . '%');
+        }
+
+        $cars = $query->get();
+        $msg = '';
+        if(count($cars) == 0){
+            $msg = 'No car found!';
+        }else if(count($cars) == 1){
+            $msg = 'Car found!';
+        }else{
+            $msg = 'Cars found!';
+        }
+
+        return response()->json([
+            'meta' => [
+                'code' => 200,
+                'status' => 'Success',
+                'message' => $msg
+            ],
+            'data' => [
+                'total' =>  count($cars),
+                'cars' => $cars
+            ]
+        ]);
+    }
 }

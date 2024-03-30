@@ -31,6 +31,7 @@ Route::group(
         'prefix' => 'car'
     ],
     function(){
+        Route::get('/search', [CarController::class, 'search']);
         Route::get('/', [CarController::class, 'index']);
         Route::get('/{id}', [CarController::class, 'detail']);
     }
