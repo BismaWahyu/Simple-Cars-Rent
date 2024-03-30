@@ -45,6 +45,7 @@ Route::group(
         Route::get('/', [RentController::class, 'index']);
         Route::get('/{id}', [RentController::class, 'detail']);
         Route::post('/book', [RentController::class, 'store']);
+        Route::post('/return', [RentController::class, 'return']);
     }
 );
 

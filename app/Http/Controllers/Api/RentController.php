@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Cars;
 use App\Models\User;
 use App\Models\CarsRent;
+use App\Models\CarsReturn;
 use Carbon\Carbon;
 
 class RentController extends Controller
@@ -162,7 +163,61 @@ class RentController extends Controller
         }
     }
 
-    public function checkRentalAvailability($carId, $startDate, $endDate){
+    public function return(Request $request){
+        $validator = Validator::make($request->all(),[
+            "id" => 'required|integer|exists:cars_rent,id',
+            "actual_return_date" => 'required|after:start_date'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try{    
+            $penalty = $this->checkPenaltyFee($request->id, $request->return_date);
+            $rental = CarsRent::with('car')->find($request->id);
+
+            $returnCar = CarsReturn::create([
+                'user_id' => $rental->user->id,
+                'car_id' => $rental->car->id,
+                'return_date' => $rental->end_date,
+                'actual_return_date' => $request->input('actual_return_date'),
+                'penalty_fee' => $penalty
+            ]);
+
+            return response()->json([
+                'meta' => [
+                    'code' => 201,
+                    'status' => 'Success',
+                    'message' => 'Thank you!'
+                ],
+                'data' => [
+                    'cars' => $returnCar
+                ]
+            ]);
+            
+        }catch(\Exception $e){
+            return response()->json([
+                'meta' => [
+                    'code' => 422,
+                    'status' => 'Success',
+                    'message' => $e->getMessage()
+                ],
+                'data' => [
+                    'cars' => []
+                ]
+            ], 422);
+        }
+
+    }
+
+    /**
+     * Utils
+     */
+    public function checkRentalAvailability($carId, $endDate){
         $existingRentals = CarsRent::where('car_id', $carId)
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where(function ($q) use ($startDate, $endDate) {
@@ -180,5 +235,22 @@ class RentController extends Controller
             if ($existingRentals || $car->available <= 0) {
                 throw new \Exception('Car is either already rented during the selected dates or currently out of stock.');
             }
+    }
+
+    public function checkPenaltyFee($rentId, $returnDate){
+        $rental = CarsRent::with('car')->find($rentId);
+        
+        $penaltyRate = $rental->car->penalty_rate;
+        
+        $endDate = Carbon::parse($rental->end_date);
+        $returnDate = Carbon::parse($returnDate);
+
+        $timeDifferenceInHours = intval($returnDate->diffInHours($endDate, true));
+        if ($timeDifferenceInHours <= 0) {
+            return 0;
+        }
+
+        $penaltyFee = $timeDifferenceInHours * $penaltyRate;
+        return $penaltyFee;
     }
 }
