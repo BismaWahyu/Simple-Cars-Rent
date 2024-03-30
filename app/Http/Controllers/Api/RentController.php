@@ -17,7 +17,11 @@ class RentController extends Controller
     }
 
     public function index(){
-        $rents = CarsRent::all();
+        $rents = CarsRent::with('car', 'user')->get();
+        foreach ($rents as $rent) {
+            unset($rent->user_id);
+            unset($rent->car_id);
+        }
 
         return response()->json([
             'meta' => [
