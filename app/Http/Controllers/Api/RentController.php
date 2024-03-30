@@ -90,6 +90,19 @@ class RentController extends Controller
 
         $car = Cars::find($request->input('car_id'));
 
+        if($car->stock == 0){
+            return response()->json([
+                'meta' => [
+                    'code' => 400,
+                    'status' => 'Bad Request',
+                    'message' => 'Selected car is out of stock'
+                ],
+                'data' => [
+                    'cars' => []
+                ]
+            ]);
+        }
+
         if($car->available == 0){
             return response()->json([
                 'meta' => [
@@ -115,7 +128,8 @@ class RentController extends Controller
             'price' => $price,
         ]);
 
-        
+        $car->available = $car->available - $request->input('amount');
+        $car->save();
 
         return response()->json([
             'meta' => [
